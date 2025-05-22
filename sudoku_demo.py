@@ -8,7 +8,6 @@ MAX_HINTS = 3
 game_won = False
 wrong_attempts = 0 # số lượng lỗi sai tùy theo cấp độ
 MAX_WRONG = {"easy": 5, "medium": 3, "hard": 3}
-
 pygame.init() #khởi tạo module
 
 # CẤU HÌNH CƠ BẢN
@@ -79,12 +78,15 @@ def draw_numbers(): #vẽ số duyệt từng ô
 def highlight_cell(row, col): #dùng để tô sáng ô mà người chơi đang chọn
     pygame.draw.rect(window, HIGHLIGHT_COLOR, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
-def draw_timer(): #hiển thị đồng hồ
-    elapsed = (pygame.time.get_ticks() - start_time) // 1000 #trả về số millisecond hiển thị thời gian trôi qua
-    mins, secs = divmod(elapsed, 60) # 60s -> 1p
-    time_text = f"Time: {mins:02}:{secs:02}"  
-    text = small_font.render(time_text, True, BLACK)
-    window.blit(text, (10, HEIGHT - 70))
+def draw_timer(): #mới sữa lại hàm này
+    if game_won and game_over_time:
+        elapsed_time = (game_over_time - start_time) // 1000
+    else:
+        elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
+    minutes = elapsed_time // 60
+    seconds = elapsed_time % 60
+    time_text = small_font.render(f"Time: {minutes:02}:{seconds:02}", True, (0, 0, 0))
+    window.blit(time_text,(10, HEIGHT - 70))
 
 def draw_wrong_attempts(): #hiển thị số lần sai
     max_wrong = MAX_WRONG[difficulty]
@@ -160,11 +162,20 @@ def is_board_complete(): #kiểm tra ng chơi đã hoàn thành bảng chưa
 # KHỞI TẠO
 board, solution = None, None 
 fixed_cells = [[False] * 9 for _ in range(9)]
-
+# mới thêm vào
+selected_cell = None
+hint_used = 0
+wrong_attempts = 0
+game_won = False
+game_over_time = None
+show_hint_warning = False
+hint_warning_time = 0
 # VÒNG LẶP CHÍNH
 running = True
 while running:#giữ cho game chạy liên tục đến khi quit
     window.fill(WHITE) #xóa màn hình bằng màu trắng trước khi vẽ lại
+    current_time = pygame.time.get_ticks() # MỚI THÊM
+    #trả về số mili-giây (ms) đã trôi qua kể từ khi gọi pygame.init()
     if game_state == "menu":
         draw_menu()
     elif game_state == "play":
@@ -175,24 +186,41 @@ while running:#giữ cho game chạy liên tục đến khi quit
         draw_timer()
         draw_new_exit_buttons()
         draw_wrong_attempts()
-        if is_board_complete():#kiểm tra thắng hay thua, gợi ý
-            game_won = True
-            win_text = font.render("\U0001F389 YOU WIN! \U0001F389", True, (200, 0, 0))
-            window.blit(win_text, (WIDTH // 2 - win_text.get_width() // 2, HEIGHT - 130))
-        elif hint_used >= MAX_HINTS:
+        #MỚI THAY ĐỔI
+       # Cảnh báo hết hint (2s rồi biến mất)
+        if show_hint_warning and current_time - hint_warning_time <= 2000:
             warning = small_font.render("NO HINTS LEFT!", True, (200, 0, 0))
             window.blit(warning, (WIDTH // 2 - warning.get_width() // 2, HEIGHT - 120))
-        elif wrong_attempts >= MAX_WRONG[difficulty]:
-            lose_text = font.render("YOU LOSE!", True, (200, 0, 0))
-            window.blit(lose_text, (WIDTH // 2 - lose_text.get_width() // 2, HEIGHT - 130))
+        else:
+            show_hint_warning = False
+
+        # Kiểm tra WIN
+        if is_board_complete() and not game_won:
+            game_won = True
+            game_over_time = current_time
+
+        # Kiểm tra LOSE
+        if wrong_attempts >= MAX_WRONG[difficulty] and not game_won:
+            game_won = True
+            game_over_time = current_time
+
+        # Hiển thị kết quả
+        if game_won:
+            if is_board_complete():
+                win_text = font.render("\U0001F389 YOU WIN! \U0001F389", True, (200, 0, 0))
+                window.blit(win_text, (WIDTH // 2 - win_text.get_width() // 2, HEIGHT - 130))
+            elif wrong_attempts >= MAX_WRONG[difficulty]:
+                lose_text = font.render("YOU LOSE!", True, (200, 0, 0))
+                window.blit(lose_text, (WIDTH // 2 - lose_text.get_width() // 2, HEIGHT - 130))
+
     pygame.display.flip()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT: #thoát game
             running = False
 
-        if game_state == "menu":
-            if event.type == pygame.MOUSEBUTTONDOWN: #chọn độ khó qua click chuột
+        if game_state == "menu": #MỚI THÊM  ĐIỀU KIỆN CLICK CHUỘT TRÁI
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:#chọn độ khó qua click chuột TRÁI
                 x, y = pygame.mouse.get_pos()
                 if 220 <= x <= 420:
                     if 200 <= y <= 260:
@@ -209,15 +237,18 @@ while running:#giữ cho game chạy liên tục đến khi quit
                         hint_used = 0
                         wrong_attempts = 0
                         game_won = False
+                        game_over_time = None #MỚI THÊM
+                        show_hint_warning = False #MỚI THÊM
                         game_state = "play"
 
-        elif game_state == "play": 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+        elif game_state == "play":  #MỚI THÊM  ĐIỀU KIỆN CLICK CHUỘT TRÁI
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 x, y = pygame.mouse.get_pos()
                 if y < WIDTH:
                     row, col = y // CELL_SIZE, x // CELL_SIZE
-                    if not fixed_cells[row][col]:
+                    if not fixed_cells[row][col] and not game_won: #bảo đảm GAME chưa kết thúc
                         selected_cell = (row, col)
+                        
                 elif new_game_rect.collidepoint(x, y):
                     board, solution = generate_sudoku(difficulty)
                     fixed_cells = [[board[r][c] != 0 for c in range(COLS)] for r in range(ROWS)]
@@ -226,34 +257,36 @@ while running:#giữ cho game chạy liên tục đến khi quit
                     hint_used = 0
                     wrong_attempts = 0
                     game_won = False
+                    game_over_time = None #MỚI THÊM
+                    show_hint_warning = False #MỚI THÊM
+                    
                 elif exit_game_rect.collidepoint(x, y):
                     game_state = "menu"
-                elif hint_button.collidepoint(x, y):
+                # #Kiểm tra player có nhấn chuột vào nút gợi ý (hint_button) không, đảm bảo game ch kết thúc    
+                elif hint_button.collidepoint(x, y) and not game_won: #cả đoạn này có sửa đổi
                     if hint_used < MAX_HINTS:
-                        for r in range(9):
-                            for c in range(9):
-                                if board[r][c] == 0:
-                                    board[r][c] = solution[r][c]
-                                    hint_used += 1
-                                    selected_cell = None
-                                    break
-                            else:
-                                continue
-                            break
-
-            if event.type == pygame.KEYDOWN and selected_cell:
+                        empty_cells = [(r, c) for r in range(9) for c in range(9) if board[r][c] == 0]
+                        if empty_cells:
+                            r, c = random.choice(empty_cells)
+                            board[r][c] = solution[r][c]
+                            hint_used += 1
+                            selected_cell = None                                    
+                    else:
+                        show_hint_warning = True
+                        hint_warning_time = pygame.time.get_ticks()
+                        
+            #có fix nguyên đoạn này            
+            if event.type == pygame.KEYDOWN and selected_celland not game_won:
                 r, c = selected_cell
-                if event.unicode.isdigit():
+                if event.unicode.isdigit():  #Xử lý khi player nhập một chữ số
                     num = int(event.unicode)
-                    if 1 <= num <= 9:
-                        if not fixed_cells[r][c]:
-                            if num == solution[r][c]:
-                                board[r][c] = num
-                            else:
-                                board[r][c] = num
-                                wrong_attempts += 1
-                elif event.key == pygame.K_BACKSPACE:
+                    if 1 <= num <= 9 and not fixed_cells[r][c]:
+                        board[r][c] = num
+                        if num != solution[r][c]:
+                            wrong_attempts += 1
+                elif event.key == pygame.K_BACKSPACE and not fixed_cells[r][c]: #Xử lý khi player nhấn phím Backspace (xóa số):
                     board[r][c] = 0
+                   
 
 pygame.quit()
 sys.exit()
