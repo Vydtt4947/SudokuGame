@@ -65,7 +65,7 @@ BUTTON_MARGIN = 15
 ICON_SIZE = 95 # Kích thước cho icon
 hint_rect = pygame.Rect(RIGHT_PANEL_X + 5, 50, ICON_SIZE, ICON_SIZE)
 # Tải và thay đổi kích thước icon
-icon_hint = pygame.transform.scale(pygame.image.load("assets/10.png"), (ICON_SIZE, ICON_SIZE))
+icon_hint = pygame.transform.scale(pygame.image.load("assets/hint.png"), (ICON_SIZE, ICON_SIZE))
 new_game_button_rect = pygame.Rect(RIGHT_PANEL_X + (RIGHT_PANEL_WIDTH - 300) // 4, TOTAL_HEIGHT - 80, 200, 50)
 exit_game_button_rect = pygame.Rect(TOTAL_WIDTH - 120 - 20, TOTAL_HEIGHT - 80, 100, 50)  # Giữ nút Exit ở vị trí cũ (góc dưới phải)
 
