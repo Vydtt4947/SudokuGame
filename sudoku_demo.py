@@ -16,8 +16,11 @@ pygame.mixer.init()  # Khởi tạo module âm thanh
 try:
     music_menu = pygame.mixer.Sound("assets/music1.mp3")
     music_game = pygame.mixer.Sound("assets/music2.mp3")
-    music_menu.set_volume(0.5)
-    music_game.set_volume(0.5)
+    sound_click_phim = pygame.mixer.Sound("assets/bubble.mp3")
+    sound_click_bang = pygame.mixer.Sound("assets/left.mp3")
+
+    for sound in [music_menu, music_game, sound_click_phim, sound_click_bang]:
+        sound.set_volume(0.5)
     current_music = None
 except:
     print("Could not load music files")
@@ -51,7 +54,7 @@ LIGHT_GRAY = (220, 220, 220)
 # DARK_LINE = (52, 72, 97) # Định nghĩa lại bên dưới draw_button
 LIGHT_RED = (255, 200, 200)
 LIGHT_BLUE = (173, 216, 230)
-HIGHLIGHT_COLOR = (255, 255, 153)
+HIGHLIGHT_COLOR = "#009966"
 BUTTON_COLOR = (100, 200, 255)
 BUTTON_HOVER = (70, 170, 230)
 
@@ -86,11 +89,9 @@ RIGHT_PANEL_X = GAME_WIDTH + 20  # Bắt đầu vẽ các phần tử bên phả
 RIGHT_PANEL_WIDTH = TOTAL_WIDTH - GAME_WIDTH - 30  # Chiều rộng của khu vực điều khiển
 BUTTON_MARGIN = 15 # Khoảng cách giữa các nút
 
-# Vị trí nút hint (sẽ được căn giữa)
+# Vị trí nút hint
 ICON_SIZE = 95 # Kích thước cho icon
-hint_rect_x = RIGHT_PANEL_X + (RIGHT_PANEL_WIDTH - ICON_SIZE) // 2
-hint_rect_y = 65 # Đẩy xuống một chút để không quá sát với text Mistakes/Time
-hint_rect = pygame.Rect(hint_rect_x, hint_rect_y, ICON_SIZE, ICON_SIZE)
+hint_rect = pygame.Rect(RIGHT_PANEL_X + 20, 50, ICON_SIZE, ICON_SIZE)
 
 try: # Thêm try-except
     icon_hint = pygame.transform.scale(pygame.image.load("assets/hint.png"), (ICON_SIZE, ICON_SIZE))
@@ -134,7 +135,7 @@ exit_game_button_rect = pygame.Rect(ng_ex_block_start_x + NG_BTN_W + BUTTON_MARG
 def draw_button(screen, text, x, y, w, h, inactive_color, active_color, radius, text_color, text_size, icon=None):
     mouse = pygame.mouse.get_pos()
     is_hovering = x + w > mouse[0] > x and y + h > mouse[1] > y
-    color = active_color if is_hovering else inactive_color
+    color = active_color if x + w > mouse[0] > x and y + h > mouse[1] > y else inactive_color
     
     pygame.draw.rect(screen, color, (x, y, w, h), border_radius=radius)
     if icon:
@@ -169,7 +170,7 @@ def draw_numbers(): #vẽ các hoa quả ở play screen
             num = board[r][c]
             if num != 0:
                 rect = pygame.Rect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-                # Tô màu nền nếu là số người dùng điền
+                 # Tô màu nền nếu là số người dùng điền
                 if not fixed_cells[r][c]:
                     if num == solution[r][c]:
                         pygame.draw.rect(window, LIGHT_BLUE, rect)
@@ -183,8 +184,7 @@ def draw_numbers(): #vẽ các hoa quả ở play screen
                     window.blit(img, (x_pos, y_pos))
 
 def highlight_cell(row, col):  # dùng để tô sáng ô mà người chơi đang chọn
-    pygame.draw.rect(window, HIGHLIGHT_COLOR, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE), 3) # Thêm độ dày cho highlight
-
+    pygame.draw.rect(window, HIGHLIGHT_COLOR, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE), width=3 )
 def draw_timer():  # Vẽ đồng hồ
     if game_won and game_over_time:
         elapsed_time = (game_over_time - start_time) // 1000
@@ -198,9 +198,9 @@ def draw_timer():  # Vẽ đồng hồ
 
 def draw_wrong_attempts():  # hiển thị số lần sai
     max_wrong = MAX_WRONG[difficulty]
-    text = small_font.render(f"Mistakes: {wrong_attempts}/{max_wrong}", True, (200,0,0)) # Màu đỏ
+    text = small_font.render(f"Mistakes: {wrong_attempts}/{max_wrong}", True, (200, 0, 0))
     # Đặt ở vị trí mới, bên phải
-    window.blit(text, (RIGHT_PANEL_X + 10, 20))  # Góc trên trái của panel, thêm padding 10
+    window.blit(text, (RIGHT_PANEL_X + 10, 20))  # Góc trên trái của panel
 
 def draw_number_buttons():  # vẽ bàn phím chọn icon bên phải
     for i, rect in enumerate(number_button_rects):
@@ -231,13 +231,13 @@ def draw_new_exit_buttons():  # vẽ nút new với exit
 def draw_menu():  # vẽ nút mức độ ở màn hình bắt đầu
     window.fill((255, 228, 225)) # Màu nền hồng phấn
     try:
-        title_font = pygame.font.SysFont("Comic Sans MS", 60) # Tăng kích thước font
+        title_font = pygame.font.SysFont("Comic Sans MS", 65, bold=True) # Tăng kích thước font
     except:
-        title_font = pygame.font.SysFont(None, 80) # Font mặc định nếu Comic Sans MS không có
+        title_font = pygame.font.SysFont(None, 65) # Font mặc định nếu Comic Sans MS không có
     title = title_font.render("SUDOKU FRUIT", True, (220, 20, 60)) # Màu đỏ thẫm cho tiêu đề
     
     # Canh giữa tiêu đề cho toàn bộ cửa sổ TOTAL_WIDTH
-    title_rect = title.get_rect(center=(TOTAL_WIDTH // 3, 120)) # Đẩy tiêu đề xuống chút
+    title_rect = title.get_rect(center=(TOTAL_WIDTH // 3.25, 120)) # Đẩy tiêu đề xuống chút
     window.blit(title, title_rect)
 
     # Nút Difficulty - căn giữa trong khu vực GAME_WIDTH
@@ -357,15 +357,16 @@ while running:
     elif game_state == "play":
         play_music(music_game)
         # Vẽ nền cho panel bên phải (nếu không có sidebar_bg hoặc muốn màu nền đồng nhất)
-        pygame.draw.rect(window, LIGHT_GRAY, (GAME_WIDTH, 0, TOTAL_WIDTH - GAME_WIDTH, TOTAL_HEIGHT))
-        if sidebar_bg: # Vẽ sidebar_bg nếu có, đè lên màu nền xám
-            window.blit(sidebar_bg, (GAME_WIDTH, 0))
+        pygame.draw.rect(window, "#FBD6E3", (GAME_WIDTH, 0, TOTAL_WIDTH - GAME_WIDTH, TOTAL_HEIGHT))
+        # if sidebar_bg: # Vẽ sidebar_bg nếu có, đè lên màu nền xám
+        #     window.blit(sidebar_bg, (GAME_WIDTH, 0))
 
-
-        draw_grid() # Vẽ lưới trước
-        if selected_cell: # Vẽ highlight sau lưới, trước số
+        draw_numbers()
+        draw_grid()
+        if selected_cell:
             highlight_cell(*selected_cell)
-        draw_numbers() # Vẽ số sau highlight
+        
+        
 
         # Vẽ các phần tử UI bên phải
         draw_timer()
@@ -377,9 +378,9 @@ while running:
         if show_hint_warning and current_time_ticks - hint_warning_time <= 2000:
             warning_font = pygame.font.SysFont("Georgia", 28, bold=True) # Giảm kích thước font một chút
             warning = warning_font.render("NO HINTS LEFT!", True, (255, 0, 0), LIGHT_GRAY) # Nền LIGHT_GRAY cho dễ đọc
-            # Căn giữa cảnh báo phía trên nút hint
-            warn_rect = warning.get_rect(center=(hint_rect.centerx, hint_rect.top - 20))
-            window.blit(warning, warn_rect)
+           # Cảnh báo này có thể đặt ở vị trí cụ thể trong bảng điều khiển bên phải
+            window.blit(warning, (RIGHT_PANEL_X +120, GAME_HEIGHT - 520))
+          
         else:
             show_hint_warning = False
 
@@ -405,13 +406,12 @@ while running:
             elif wrong_attempts >= MAX_WRONG[difficulty]:
                 result_text_content = "GAME OVER!" # Thay "YOU LOSE!" bằng "GAME OVER!"
                 text_color = (200, 0, 0) # Màu đỏ
-            
             if result_text_content:
                 # Hiển thị ở cùng vị trí với cảnh báo hint (hoặc tương tự)
-                result_font = pygame.font.SysFont("Georgia", 32, bold=True)
+                result_font = pygame.font.SysFont("Georgia", 28, bold=True)
                 display_text_surf = result_font.render(result_text_content, True, text_color, LIGHT_GRAY)
-                display_rect = display_text_surf.get_rect(center=(hint_rect.centerx, hint_rect.top - 25)) # Điều chỉnh vị trí
-                window.blit(display_text_surf, display_rect)
+               # Điều chỉnh vị trí
+                window.blit(display_text_surf, (RIGHT_PANEL_X +135, GAME_HEIGHT - 520))
 
     pygame.display.flip()
 
@@ -439,6 +439,7 @@ while running:
                     temp_difficulty = "hard"
                 
                 if temp_difficulty:
+                    sound_click_phim.play()
                     difficulty = temp_difficulty
                     board, solution = generate_sudoku(difficulty)
                     fixed_cells = [[board[r][c] != 0 for c in range(COLS)] for r in range(ROWS)]
@@ -451,105 +452,75 @@ while running:
                     show_hint_warning = False
                     game_state = "play"
 
+
         elif game_state == "play":
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                x_mouse, y_mouse = pygame.mouse.get_pos()
+                x, y = pygame.mouse.get_pos()
 
                 # Xử lý click trong khu vực chơi Sudoku (bên trái)
-                if x_mouse < GAME_WIDTH and y_mouse < GAME_HEIGHT:
-                    row_clicked, col_clicked = y_mouse // CELL_SIZE, x_mouse // CELL_SIZE
-                    # Chỉ cho phép chọn nếu game chưa thắng/thua và ô không cố định
-                    if not game_won and not fixed_cells[row_clicked][col_clicked]:
-                        selected_cell = (row_clicked, col_clicked)
-                    else:
-                        selected_cell = None # Bỏ chọn nếu click vào ô cố định hoặc game đã kết thúc
+                if x < GAME_WIDTH and y < GAME_HEIGHT:
+                    row, col = y // CELL_SIZE, x // CELL_SIZE
+                    if not fixed_cells[row][col] and not game_won:
+                        selected_cell = (row, col)
+                        sound_click_bang.play()
                 # Xử lý click trong khu vực điều khiển bên phải
                 else:
-                    selected_cell = None # Click ra ngoài lưới thì bỏ chọn ô
-                    # Nút Hint
-                    if hint_rect.collidepoint(x_mouse, y_mouse) and not game_won:
+                    if hint_rect.collidepoint(x, y) and not game_won:
+                        sound_click_phim.play()
                         if hint_used < MAX_HINTS:
-                            empty_cells = [(r_idx, c_idx) for r_idx in range(ROWS) for c_idx in range(COLS) if board[r_idx][c_idx] == 0]
+                            empty_cells = [(r, c) for r in range(9) for c in range(9) if board[r][c] == 0]
                             if empty_cells:
-                                r_hint, c_hint = random.choice(empty_cells)
-                                board[r_hint][c_hint] = solution[r_hint][c_hint]
-                                # Không cần đặt fixed_cells[r_hint][c_hint] = True vì hint là số người dùng có thể thay đổi
+                                r, c = random.choice(empty_cells)
+                                board[r][c] = solution[r][c]
                                 hint_used += 1
+                                selected_cell = None
                         else:
                             show_hint_warning = True
                             hint_warning_time = pygame.time.get_ticks()
+                   
 
                     # Các nút số (1-9)
-                    if not game_won and selected_cell: # Cần selected_cell trước khi điền số
-                        for i, rect_button in enumerate(number_button_rects):
-                            if rect_button.collidepoint(x_mouse, y_mouse):
-                                r_sel, c_sel = selected_cell
-                                num_chosen = i + 1
-                                if not fixed_cells[r_sel][c_sel]: # Double check
-                                    board[r_sel][c_sel] = num_chosen
-                                    if num_chosen != solution[r_sel][c_sel]:
-                                        wrong_attempts += 1
-                                # selected_cell = None # Bỏ chọn sau khi điền
-                                break
+                    for i, rect in enumerate(number_button_rects):
+                        if rect.collidepoint(x, y) and selected_cell and not game_won:
+                            sound_click_phim.play()
+                            r, c = selected_cell
+                            num = i + 1
+                            if not fixed_cells[r][c]:
+                                board[r][c] = num
+                                if num != solution[r][c]:
+                                    wrong_attempts += 1
+                            break  # Đảm bảo chỉ xử lý một nút số
 
-                    # Nút New Game (trong màn hình play)
-                    if new_game_button_rect.collidepoint(x_mouse, y_mouse):
-                        # Reset game với difficulty hiện tại
-                        if difficulty: # Phải có difficulty đã được chọn
-                            board, solution = generate_sudoku(difficulty)
-                            fixed_cells = [[board[r][c] != 0 for c in range(COLS)] for r in range(ROWS)]
-                            selected_cell = None
-                            start_time = pygame.time.get_ticks()
-                            hint_used = 0
-                            wrong_attempts = 0
-                            game_won = False
-                            game_over_time = None
-                            show_hint_warning = False
-                        else: # Nếu chưa có difficulty (trường hợp hiếm), quay về menu
-                            game_state = "menu"
+                    # Nút New Game
+                    if new_game_button_rect.collidepoint(x, y):
+                        sound_click_phim.play()
+                    # tạo game mới
+                        board, solution = generate_sudoku(difficulty)
+                        fixed_cells = [[board[r][c] != 0 for c in range(COLS)] for r in range(ROWS)]
+                        selected_cell = None
+                        start_time = pygame.time.get_ticks()
+                        hint_used = 0
+                        wrong_attempts = 0
+                        game_won = False
+                        game_over_time = None
+                        show_hint_warning = False
 
-
-                    # Nút Exit (trong màn hình play)
-                    elif exit_game_button_rect.collidepoint(x_mouse, y_mouse):
-                        game_state = "menu" # Quay về menu chính
-                        play_music(music_menu) # Chuyển nhạc ngay
-
+                    # Nút Exit
+                    elif exit_game_button_rect.collidepoint(x, y):
+                        sound_click_phim.play()
+                        game_state = "menu"
 
             # Xử lý phím bấm (chỉ khi ô được chọn trong khu vực game chính)
             if event.type == pygame.KEYDOWN and selected_cell and not game_won:
-                r_sel, c_sel = selected_cell
-                if not fixed_cells[r_sel][c_sel]: # Chỉ cho phép nhập vào ô không cố định
-                    if event.unicode.isdigit():  # Xử lý khi player nhập một chữ số
-                        num_typed = int(event.unicode)
-                        if 1 <= num_typed <= 9:
-                            board[r_sel][c_sel] = num_typed
-                            if num_typed != solution[r_sel][c_sel]:
-                                wrong_attempts += 1
-                            # selected_cell = None # Bỏ chọn sau khi nhập
-                    elif event.key == pygame.K_BACKSPACE:  # Xóa số
-                        board[r_sel][c_sel] = 0
-                    # Di chuyển ô chọn bằng phím mũi tên
-                    elif event.key == pygame.K_LEFT:
-                        new_c = max(0, c_sel - 1)
-                        while new_c > 0 and fixed_cells[r_sel][new_c]: new_c -=1 # bỏ qua ô fixed
-                        if not fixed_cells[r_sel][new_c]: selected_cell = (r_sel, new_c)
-                    elif event.key == pygame.K_RIGHT:
-                        new_c = min(COLS - 1, c_sel + 1)
-                        while new_c < COLS -1 and fixed_cells[r_sel][new_c]: new_c +=1
-                        if not fixed_cells[r_sel][new_c]: selected_cell = (r_sel, new_c)
-                    elif event.key == pygame.K_UP:
-                        new_r = max(0, r_sel - 1)
-                        while new_r > 0 and fixed_cells[new_r][c_sel]: new_r -=1
-                        if not fixed_cells[new_r][c_sel]: selected_cell = (new_r, c_sel)
-                    elif event.key == pygame.K_DOWN:
-                        new_r = min(ROWS - 1, r_sel + 1)
-                        while new_r < ROWS - 1 and fixed_cells[new_r][c_sel]: new_r +=1
-                        if not fixed_cells[new_r][c_sel]: selected_cell = (new_r, c_sel)
+                r, c = selected_cell
+                if event.unicode.isdigit():  # Xử lý khi player nhập một chữ số
+                    num = int(event.unicode)
+                    if 1 <= num <= 9 and not fixed_cells[r][c]:
+                        board[r][c] = num
+                        if num != solution[r][c]:
+                            wrong_attempts += 1
+                elif event.key == pygame.K_BACKSPACE and not fixed_cells[r][c]:  # Xử lý khi player nhấn phím Backspace (xóa số):
+                    board[r][c] = 0
 
-
-# Dọn dẹp khi thoát
-if current_music:
-    current_music.stop()
-pygame.mixer.quit()
 pygame.quit()
 sys.exit()
